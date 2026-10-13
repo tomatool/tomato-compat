@@ -24,7 +24,7 @@ jobs:
           go-version-file: tomato/go.mod
       - name: Build tomato from main
         run: cd tomato && go build -o "$RUNNER_TEMP/tomato" .
-      - name: Compatibility against the latest release
+      - name: Regression against the latest release
         uses: ./
         with:
           candidate: ${{ runner.temp }}/tomato

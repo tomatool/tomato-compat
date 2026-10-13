@@ -1,5 +1,5 @@
-name: tomato compatibility
-description: Backward-compatibility checks for a tomato build against a released baseline
+name: tomato regression
+description: Regression tests for a tomato build, from backward compatibility with a released baseline to the first run, the UI and the previous release's suite
 author: tomatool
 branding:
   icon: shield
@@ -30,10 +30,22 @@ inputs:
     description: Allowlist of documented breaks, one `kind value` per line.
     required: false
     default: compatibility/breaking.txt
-  previous-suite:
-    description: Also run the baseline release's own integration suite against the candidate. Needs Docker and Go.
+  first-run:
+    description: Drive `tomato init` on a pseudo-terminal with every dependency selected, then validate and run the project it writes. Needs Docker.
     required: false
-    default: 'false'
+    default: 'true'
+  reports:
+    description: Run a container-free project without Docker and check its exit code, JUnit and Cucumber reports and event stream.
+    required: false
+    default: 'true'
+  ui:
+    description: Start `tomato ui` and exercise its HTTP API, including a run and a filtered run.
+    required: false
+    default: 'true'
+  previous-suite:
+    description: Replay the baseline release's own integration suite against the candidate. Needs Docker and Go.
+    required: false
+    default: 'true'
   candidate-version:
     description: The version the candidate will be released as, to check that a patch carries no additions or breaks.
     required: false
@@ -103,17 +115,24 @@ runs:
         REPO: ${{ inputs.repo }}
         CORPUS: ${{ inputs.corpus }}
         ALLOW: ${{ inputs.allow }}
+        FIRST_RUN: ${{ inputs.first-run }}
+        REPORTS: ${{ inputs.reports }}
+        UI: ${{ inputs.ui }}
         PREVIOUS_SUITE: ${{ inputs.previous-suite }}
         CANDIDATE_VERSION: ${{ inputs.candidate-version }}
         ACTION_PATH: ${{ github.action_path }}
       run: |
         set -uo pipefail
         corpus="$CORPUS"; [ -n "$corpus" ] || corpus="$ACTION_PATH/corpus"
-        extra=(); [ "$PREVIOUS_SUITE" = true ] && extra+=(--previous-suite)
-        python3 "$ACTION_PATH/compatibility.py" \
+        skip=""
+        [ "$FIRST_RUN" = true ] || skip="$skip,first-run"
+        [ "$REPORTS" = true ] || skip="$skip,reports"
+        [ "$UI" = true ] || skip="$skip,ui"
+        [ "$PREVIOUS_SUITE" = true ] || skip="$skip,previous-suite"
+        python3 "$ACTION_PATH/regression.py" \
           --baseline-bin "$BASELINE_BIN" --candidate-bin "$CANDIDATE_BIN" --baseline-tag "$BASELINE_TAG" \
           --repo "$REPO" --candidate-src "$SRC" --corpus "$corpus" --allow "$ALLOW" \
-          --candidate-version "$CANDIDATE_VERSION" --breaks-out "$RUNNER_TEMP/compatibility-breaks.txt" "${extra[@]}"
+          --candidate-version "$CANDIDATE_VERSION" --breaks-out "$RUNNER_TEMP/regression-breaks.txt" --skip "${skip#,}"
         rc=$?
-        { echo "breaks<<COMPAT_EOF"; cat "$RUNNER_TEMP/compatibility-breaks.txt" 2>/dev/null || true; echo "COMPAT_EOF"; } >> "$GITHUB_OUTPUT"
+        { echo "breaks<<COMPAT_EOF"; cat "$RUNNER_TEMP/regression-breaks.txt" 2>/dev/null || true; echo "COMPAT_EOF"; } >> "$GITHUB_OUTPUT"
         exit $rc

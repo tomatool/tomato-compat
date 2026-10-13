@@ -305,7 +305,7 @@ def load_allow(path):
 
 
 def write_summary(report, base_tag, path):
-    lines = ["## tomato compatibility", "", f"Baseline: `{base_tag}`", "", "| Check | Result |", "|---|---|"]
+    lines = ["## tomato regression", "", f"Baseline: `{base_tag}`", "", "| Check | Result |", "|---|---|"]
     lines += [f"| {c} | {s} |" for c, s in report.rows]
     not_allowed = [b for b in report.breaks if not b.allowed]
     allowed = [b for b in report.breaks if b.allowed]
