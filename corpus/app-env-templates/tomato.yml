@@ -1,0 +1,21 @@
+version: 2
+app:
+  command: go run ./cmd/app
+  port: 8080
+  env:
+    DATABASE_URL: "postgres://postgres:postgres@{{.postgres.host}}:{{.postgres.port.5432}}/app"
+    MOCK_URL: "{{.mock.url}}"
+containers:
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432/tcp"
+resources:
+  db:
+    type: postgres
+    container: postgres
+    database: app
+  mock:
+    type: http-server
+    options:
+      port: 9999

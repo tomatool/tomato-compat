@@ -1,0 +1,12 @@
+version: 2
+containers:
+  minio:
+    image: minio/minio
+    ports:
+      - "9000/tcp"
+resources:
+  files:
+    type: s3
+    container: minio
+    options:
+      reset_strategy: none

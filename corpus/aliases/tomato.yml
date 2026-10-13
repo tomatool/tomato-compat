@@ -1,0 +1,28 @@
+version: 2
+containers:
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432/tcp"
+  minio:
+    image: minio/minio
+    ports:
+      - "9000/tcp"
+  scylla:
+    image: scylladb/scylla:6.2
+    ports:
+      - "9042/tcp"
+resources:
+  db:
+    type: postgresql
+    container: postgres
+    database: app
+  files:
+    type: minio
+    container: minio
+  cql:
+    type: cassandra
+    container: scylla
+  api:
+    type: http-client
+    base_url: http://localhost:8080

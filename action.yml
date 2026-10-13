@@ -1,0 +1,119 @@
+name: tomato compat
+description: Backward-compatibility checks for a tomato build against a released baseline
+author: tomatool
+branding:
+  icon: shield
+  color: red
+
+inputs:
+  candidate:
+    description: Path to the tomato binary to check. Empty builds one from the checkout with `go build`.
+    required: false
+    default: ''
+  candidate-src:
+    description: Checkout of the candidate, where its action.yml is read from.
+    required: false
+    default: '.'
+  baseline:
+    description: Release tag to compare against, or "latest" for the latest stable release.
+    required: false
+    default: latest
+  repo:
+    description: Repository the baseline release is downloaded from.
+    required: false
+    default: tomatool/tomato
+  corpus:
+    description: Directory of config cases. Empty uses the corpus bundled with this action.
+    required: false
+    default: ''
+  allow:
+    description: Allowlist of documented breaks, one `kind value` per line.
+    required: false
+    default: compat/breaking.txt
+  previous-suite:
+    description: Also run the baseline release's own integration suite against the candidate. Needs Docker and Go.
+    required: false
+    default: 'false'
+  candidate-version:
+    description: The version the candidate will be released as, to check that a patch carries no additions or breaks.
+    required: false
+    default: ''
+  token:
+    description: Token for the GitHub API, used to resolve "latest".
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  baseline:
+    description: The baseline tag that was compared against.
+    value: ${{ steps.baseline.outputs.tag }}
+  breaks:
+    description: Undocumented breaks, one `kind value` per line. Empty when the check passed.
+    value: ${{ steps.check.outputs.breaks }}
+
+runs:
+  using: composite
+  steps:
+    - id: baseline
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        BASELINE: ${{ inputs.baseline }}
+        REPO: ${{ inputs.repo }}
+      run: |
+        set -euo pipefail
+        tag="$BASELINE"
+        if [ "$tag" = latest ]; then
+          tag=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" "https://api.github.com/repos/$REPO/releases/latest" \
+            | python3 -c 'import json,sys; print(json.load(sys.stdin)["tag_name"])')
+        fi
+        ver=${tag#v}
+        os=$(uname -s | tr '[:upper:]' '[:lower:]')
+        arch=$(uname -m); case "$arch" in x86_64) arch=amd64;; aarch64|arm64) arch=arm64;; esac
+        dir="$RUNNER_TEMP/compat-baseline"; mkdir -p "$dir"
+        curl -fsSL -o "$dir/tomato.tgz" "https://github.com/$REPO/releases/download/$tag/tomato_${ver}_${os}_${arch}.tar.gz"
+        tar -xzf "$dir/tomato.tgz" -C "$dir" tomato
+        echo "tag=$tag" >> "$GITHUB_OUTPUT"
+        echo "bin=$dir/tomato" >> "$GITHUB_OUTPUT"
+        echo "baseline: $tag ($("$dir/tomato" version | head -1))"
+
+    - id: candidate
+      shell: bash
+      env:
+        CANDIDATE: ${{ inputs.candidate }}
+        SRC: ${{ inputs.candidate-src }}
+      run: |
+        set -euo pipefail
+        bin="$CANDIDATE"
+        if [ -z "$bin" ]; then
+          bin="$RUNNER_TEMP/compat-candidate"
+          (cd "$SRC" && go build -o "$bin" .)
+        fi
+        bin="$(cd "$(dirname "$bin")" && pwd)/$(basename "$bin")"
+        echo "bin=$bin" >> "$GITHUB_OUTPUT"
+        echo "candidate: $("$bin" version | head -1)"
+
+    - id: check
+      shell: bash
+      env:
+        BASELINE_BIN: ${{ steps.baseline.outputs.bin }}
+        BASELINE_TAG: ${{ steps.baseline.outputs.tag }}
+        CANDIDATE_BIN: ${{ steps.candidate.outputs.bin }}
+        SRC: ${{ inputs.candidate-src }}
+        REPO: ${{ inputs.repo }}
+        CORPUS: ${{ inputs.corpus }}
+        ALLOW: ${{ inputs.allow }}
+        PREVIOUS_SUITE: ${{ inputs.previous-suite }}
+        CANDIDATE_VERSION: ${{ inputs.candidate-version }}
+        ACTION_PATH: ${{ github.action_path }}
+      run: |
+        set -uo pipefail
+        corpus="$CORPUS"; [ -n "$corpus" ] || corpus="$ACTION_PATH/corpus"
+        extra=(); [ "$PREVIOUS_SUITE" = true ] && extra+=(--previous-suite)
+        python3 "$ACTION_PATH/compat.py" \
+          --baseline-bin "$BASELINE_BIN" --candidate-bin "$CANDIDATE_BIN" --baseline-tag "$BASELINE_TAG" \
+          --repo "$REPO" --candidate-src "$SRC" --corpus "$corpus" --allow "$ALLOW" \
+          --candidate-version "$CANDIDATE_VERSION" --breaks-out "$RUNNER_TEMP/compat-breaks.txt" "${extra[@]}"
+        rc=$?
+        { echo "breaks<<COMPAT_EOF"; cat "$RUNNER_TEMP/compat-breaks.txt" 2>/dev/null || true; echo "COMPAT_EOF"; } >> "$GITHUB_OUTPUT"
+        exit $rc

@@ -1,0 +1,5 @@
+resources:
+  - name: api
+    type: httpclient
+    options:
+      base_url: http://localhost:8080

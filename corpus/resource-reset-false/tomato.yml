@@ -1,0 +1,12 @@
+version: 2
+containers:
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432/tcp"
+resources:
+  db:
+    type: postgres
+    container: postgres
+    database: app
+    reset: false

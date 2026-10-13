@@ -1,0 +1,7 @@
+version: 2
+resources:
+  db:
+    type: postgres
+    host: db.internal
+    port: 5432
+    database: app

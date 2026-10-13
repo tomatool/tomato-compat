@@ -1,0 +1,7 @@
+version: 2
+settings:
+  reset:
+    level: scenario
+resources:
+  shell:
+    type: shell

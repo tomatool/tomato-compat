@@ -1,0 +1,32 @@
+name: self-test
+
+# The action run against tomato's main, so a change here is tried on the real
+# thing, and a weekly run notices when tomato's output formats drift.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+jobs:
+  against-tomato-main:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: tomatool/tomato
+          path: tomato
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: tomato/go.mod
+      - name: Build tomato from main
+        run: cd tomato && go build -o "$RUNNER_TEMP/tomato" .
+      - name: Compat against the latest release
+        uses: ./
+        with:
+          candidate: ${{ runner.temp }}/tomato
+          candidate-src: tomato
+          allow: tomato/compat/breaking.txt

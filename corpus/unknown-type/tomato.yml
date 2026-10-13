@@ -1,0 +1,4 @@
+version: 2
+resources:
+  x:
+    type: not-a-type

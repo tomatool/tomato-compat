@@ -1,0 +1,6 @@
+version: 2
+settings:
+  parallel: 2
+resources:
+  shell:
+    type: shell

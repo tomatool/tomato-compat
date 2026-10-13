@@ -1,0 +1,11 @@
+version: 2
+containers:
+  kafka:
+    preset: kafka
+resources:
+  queue:
+    type: kafka
+    container: kafka
+    options:
+      topics:
+        - events

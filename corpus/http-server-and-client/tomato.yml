@@ -1,0 +1,9 @@
+version: 2
+resources:
+  mock:
+    type: http-server
+    options:
+      port: 9999
+  client:
+    type: http-client
+    base_url: http://localhost:9999

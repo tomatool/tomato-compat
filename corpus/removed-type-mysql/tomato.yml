@@ -1,0 +1,8 @@
+version: 2
+containers:
+  mysql:
+    image: mysql:8
+resources:
+  db:
+    type: mysql
+    container: mysql
