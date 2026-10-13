@@ -24,9 +24,9 @@ jobs:
           go-version-file: tomato/go.mod
       - name: Build tomato from main
         run: cd tomato && go build -o "$RUNNER_TEMP/tomato" .
-      - name: Compat against the latest release
+      - name: Compatibility against the latest release
         uses: ./
         with:
           candidate: ${{ runner.temp }}/tomato
           candidate-src: tomato
-          allow: tomato/compat/breaking.txt
+          allow: tomato/compatibility/breaking.txt

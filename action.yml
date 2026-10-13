@@ -1,4 +1,4 @@
-name: tomato compat
+name: tomato compatibility
 description: Backward-compatibility checks for a tomato build against a released baseline
 author: tomatool
 branding:
@@ -29,7 +29,7 @@ inputs:
   allow:
     description: Allowlist of documented breaks, one `kind value` per line.
     required: false
-    default: compat/breaking.txt
+    default: compatibility/breaking.txt
   previous-suite:
     description: Also run the baseline release's own integration suite against the candidate. Needs Docker and Go.
     required: false
@@ -70,7 +70,7 @@ runs:
         ver=${tag#v}
         os=$(uname -s | tr '[:upper:]' '[:lower:]')
         arch=$(uname -m); case "$arch" in x86_64) arch=amd64;; aarch64|arm64) arch=arm64;; esac
-        dir="$RUNNER_TEMP/compat-baseline"; mkdir -p "$dir"
+        dir="$RUNNER_TEMP/compatibility-baseline"; mkdir -p "$dir"
         curl -fsSL -o "$dir/tomato.tgz" "https://github.com/$REPO/releases/download/$tag/tomato_${ver}_${os}_${arch}.tar.gz"
         tar -xzf "$dir/tomato.tgz" -C "$dir" tomato
         echo "tag=$tag" >> "$GITHUB_OUTPUT"
@@ -86,7 +86,7 @@ runs:
         set -euo pipefail
         bin="$CANDIDATE"
         if [ -z "$bin" ]; then
-          bin="$RUNNER_TEMP/compat-candidate"
+          bin="$RUNNER_TEMP/compatibility-candidate"
           (cd "$SRC" && go build -o "$bin" .)
         fi
         bin="$(cd "$(dirname "$bin")" && pwd)/$(basename "$bin")"
@@ -110,10 +110,10 @@ runs:
         set -uo pipefail
         corpus="$CORPUS"; [ -n "$corpus" ] || corpus="$ACTION_PATH/corpus"
         extra=(); [ "$PREVIOUS_SUITE" = true ] && extra+=(--previous-suite)
-        python3 "$ACTION_PATH/compat.py" \
+        python3 "$ACTION_PATH/compatibility.py" \
           --baseline-bin "$BASELINE_BIN" --candidate-bin "$CANDIDATE_BIN" --baseline-tag "$BASELINE_TAG" \
           --repo "$REPO" --candidate-src "$SRC" --corpus "$corpus" --allow "$ALLOW" \
-          --candidate-version "$CANDIDATE_VERSION" --breaks-out "$RUNNER_TEMP/compat-breaks.txt" "${extra[@]}"
+          --candidate-version "$CANDIDATE_VERSION" --breaks-out "$RUNNER_TEMP/compatibility-breaks.txt" "${extra[@]}"
         rc=$?
-        { echo "breaks<<COMPAT_EOF"; cat "$RUNNER_TEMP/compat-breaks.txt" 2>/dev/null || true; echo "COMPAT_EOF"; } >> "$GITHUB_OUTPUT"
+        { echo "breaks<<COMPAT_EOF"; cat "$RUNNER_TEMP/compatibility-breaks.txt" 2>/dev/null || true; echo "COMPAT_EOF"; } >> "$GITHUB_OUTPUT"
         exit $rc

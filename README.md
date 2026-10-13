@@ -1,4 +1,4 @@
-# tomato-compat
+# tomato-compatibility
 
 A GitHub Action that checks a build of [tomato](https://github.com/tomatool/tomato)
 against a released baseline and fails on anything the candidate removed or
@@ -30,10 +30,10 @@ CI runs the generated project end to end.
 In the tomato repository, after building the binary:
 
 ```yaml
-- uses: tomatool/tomato-compat@main
+- uses: tomatool/tomato-compatibility@main
   with:
     candidate: ./bin/tomato        # built from this PR
-    allow: compat/breaking.txt     # documented breaks live next to the changelog
+    allow: compatibility/breaking.txt     # documented breaks live next to the changelog
 ```
 
 On a tag, also pass the version so a patch cannot carry minor-version material:
@@ -51,7 +51,7 @@ Inputs:
 | `baseline` | `latest` | Release tag to compare against |
 | `repo` | `tomatool/tomato` | Where the baseline release is downloaded from |
 | `corpus` | *(bundled)* | Directory of config cases |
-| `allow` | `compat/breaking.txt` | Allowlist of documented breaks |
+| `allow` | `compatibility/breaking.txt` | Allowlist of documented breaks |
 | `previous-suite` | `false` | Run the baseline's own integration suite against the candidate; needs Docker and Go |
 | `candidate-version` | *(none)* | Version the candidate will ship as |
 
@@ -94,7 +94,7 @@ templated app env, and the reset opt-outs v2.3.0 removed.
 ## Run it locally
 
 ```sh
-python3 compat.py --baseline-bin ./tomato-2.3.1 --candidate-bin ./tomato \
+python3 compatibility.py --baseline-bin ./tomato-2.3.1 --candidate-bin ./tomato \
   --baseline-tag v2.3.1 --candidate-src ../tomato --corpus ./corpus
 ```
 

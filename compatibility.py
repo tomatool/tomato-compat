@@ -117,7 +117,7 @@ def check_steps(report, base_bin, cand_bin):
 def types_of(binary):
     with tempfile.TemporaryDirectory() as d:
         with open(os.path.join(d, "tomato.yml"), "w") as f:
-            f.write("version: 2\nresources:\n  probe:\n    type: compat-probe-not-a-type\n")
+            f.write("version: 2\nresources:\n  probe:\n    type: compatibility-probe-not-a-type\n")
         _, out = run([binary, "validate", "--plain"], cwd=d)
     m = re.search(r"Valid types:\s*(.+)", out)
     if not m:
@@ -305,7 +305,7 @@ def load_allow(path):
 
 
 def write_summary(report, base_tag, path):
-    lines = ["## tomato compat", "", f"Baseline: `{base_tag}`", "", "| Check | Result |", "|---|---|"]
+    lines = ["## tomato compatibility", "", f"Baseline: `{base_tag}`", "", "| Check | Result |", "|---|---|"]
     lines += [f"| {c} | {s} |" for c, s in report.rows]
     not_allowed = [b for b in report.breaks if not b.allowed]
     allowed = [b for b in report.breaks if b.allowed]
